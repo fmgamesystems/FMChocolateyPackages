@@ -25,6 +25,7 @@ To add a new software package, add a new entry to the `$packages` variable follo
 
 Define the `$repoDir` and `$outDir` variables in the script to set the paths for the repository and output directories
 
+
 Additional [Chocolatey ](https://docs.chocolatey.org/en-us/) documentation and resources.
 
 
