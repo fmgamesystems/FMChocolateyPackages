@@ -50,62 +50,44 @@ $packages = @(
     }
 )
 
-# Define the repo and output directories
-$repoDir = "$env:BOXROOT\FM Game Systems\Choco"
+
+# Define the source and destination repositories
+$sourceRepo = "chocolatey"
+$destRepo = "FremantleCommon"
+
+# Define the output directory
 $outDir = "$PSScriptRoot\Internalize"
 
 # Remove the output directory if it exists and create a new one
 Remove-Item -Path $outDir -Force -Recurse
 New-Item -ItemType Directory -Path $outDir -Force
 
-# Internalize and push the enabled packages
+# Check if a package has a newer version, then internalize and push
 foreach ($package in $packages) {
-    # Check if the package is enabled
-    if ($($package.Enable)) {
-        try {
-            # Internalize the package
-            Write-Output "Internalizing $($package.Name)"
-            choco download $($package.Name) --source=$($package.Source) --outdir=$outDir --internalize
-            # Update the package status based on the internalization result
-            $package.Status = "Internalized"
-        } catch {
-            Write-Output "Error internalizing $($package.Name): $_"
-            $package.Status = "Internalize failed"
-        }
-    } else {
-        $package.Status = "Not enabled"
-    }
-}
-
-# Push the internalized packages to the repo directory
-Get-ChildItem -Path "$outDir" -Filter *.nupkg | ForEach-Object { 
     try {
-        # Push the package to the repository
-        Write-Output "Pushing $($_.FullName) to repo"
-        choco push --source "$repoDir" "$($_.FullName)"
+        # Get the latest version from the source repository
+        $latestVersion = (choco search $($package.Name) --source=$sourceRepo --exact --all-versions | Select-String -Pattern "\d+(\.\d+)+").Matches.Value | Sort-Object {[version]$_} -Descending | Select-Object -First 1
+
+        # Get the current version from the destination repository
+        $currentVersion = (choco search $($package.Name) --source=$destRepo --exact --all-versions | Select-String -Pattern "\d+(\.\d+)+").Matches.Value | Sort-Object {[version]$_} -Descending | Select-Object -First 1
+
+        # Check if the latest version is newer than the current version
+        if ([version]$latestVersion -gt [version]$currentVersion) {
+            Write-Output "Internalizing and pushing new version of $($package.Name) ($latestVersion)"
+
+            # Internalize the package
+            choco download $($package.Name) --source=$sourceRepo --version=$latestVersion --outdir=$outDir --internalize
+
+            # Push the internalized package to the destination repository
+            $internalizedPackage = Get-ChildItem -Path "$outDir" -Filter *.nupkg -Recurse
+            choco push --source $destRepo $internalizedPackage.FullName
+        } else {
+            Write-Output "No update needed for $($package.Name) (current version: $currentVersion)"
+        }
     } catch {
-        Write-Output "Error pushing $($_.FullName) to repo: $_"
+        Write-Output "Error processing $($package.Name): $_"
     }
 }
 
-# Check for installed packages and update if necessary using internalized packages from the repo
-foreach ($package in $packages) {
-    # Check if the package is enabled
-    if ($($package.Enable)) {
-        try {
-            # Check if the package is already installed
-            $installedPackage = choco list --local-only --exact $($package.Name) | Where-Object { $_ -match "packages installed" }
-            
-            # Update the package if it's installed, otherwise install it
-            if ($installedPackage -ne $null) {
-                Write-Output "Updating $($package.Name)"
-                choco upgrade $($package.Name) --source=$repoDir
-            } else {
-                Write-Output "Installing $($package.Name)"
-                choco install $($package.Name) --source=$repoDir
-            }
-        } catch {
-            Write-Output "Error installing/updating $($package.Name): $_"
-        }
-    }
-}
+# Clean up the output directory
+Remove-Item -Path $outDir -Force -Recurse
