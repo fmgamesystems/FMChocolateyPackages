@@ -28,4 +28,8 @@ Define the `$repoDir` and `$outDir` variables in the script to set the paths for
 
 Additional [Chocolatey ](https://docs.chocolatey.org/en-us/) documentation and resources.
 
+Pass the argument --install-directory=value to set or change the default install directory for local packages Fremantle requries.
+
+
+
 
