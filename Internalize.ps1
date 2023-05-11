@@ -2,54 +2,13 @@
 Set-ExecutionPolicy Bypass -Scope Process -Force
 
 # Define the packages to be installed or updated
-$packages = @(
+$packages = Get-Content -Path packages.txt | ForEach-Object {
+    # Parse through the packages.txt file
     @{
-        Name = "dotnet-6.0-aspnetruntime"
+        Name = $_
         Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "dotnet-6.0-desktopruntime"
-        Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "dotnet-7.0-aspnetruntime"
-        Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "dotnet-7.0-desktopruntime"
-        Source = "chocolatey"
-        Enable = 1
-    },
-    @{
-        Name = "vscode"
-        Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "vnc-connect"
-        Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "7zip"
-        Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "vlc"
-        Source = "chocolatey"
-        Enable = 0
-    },
-    @{
-        Name = "obs"
-        Source = "chocolatey"
-        Enable = 1
     }
-)
-
+}
 
 # Define the source and destination repositories
 $sourceRepo = "chocolatey"
@@ -77,6 +36,10 @@ foreach ($package in $packages) {
 
             # Internalize the package
             choco download $($package.Name) --source=$sourceRepo --version=$latestVersion --outdir=$outDir --internalize
+
+            
+            Write-Output "choco download $($package.Name) --source=$sourceRepo --version=$latestVersion --outdir=$outDir --internalize"
+
 
             # Push the internalized package to the destination repository
             $internalizedPackage = Get-ChildItem -Path "$outDir" -Filter *.nupkg -Recurse

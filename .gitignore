@@ -1,0 +1,23 @@
+# Ignore package related directories
+packages/
+Internalize/
+
+# Ignore all .nupkg files
+*.nupkg
+
+# Ignore all log files
+*.log
+
+# Ignore all binary files
+*.bin
+*.exe
+*.dll
+
+# Ignore all config files
+*.config
+
+# Ignore the .vscode directory
+.vscode/
+
+# Ignore all .ps1xml files
+*.ps1xml
